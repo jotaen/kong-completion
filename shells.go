@@ -5,9 +5,13 @@ import (
 )
 
 type shell struct {
-	// initCode is a Go template for the shell initialization code.
+	// name is the name of the shell
+	name string
+
+	// initCode is a template for the shell initialization code.
 	initCode *template
 
+	// dynamicInitCode is a template for the command that prints the shell initialization code.
 	dynamicInitCode *template
 
 	// initFilePath is the path of the shell’s default init file, e.g. ~/.bashrc
@@ -15,9 +19,9 @@ type shell struct {
 }
 
 var shells = map[string]shell{
-	"bash": bash,
-	"zsh":  zsh,
-	"fish": fish,
+	bash.name: bash,
+	zsh.name:  zsh,
+	fish.name: fish,
 }
 
 func newShellFromString(shellName string) (shell, error) {
@@ -29,12 +33,14 @@ func newShellFromString(shellName string) (shell, error) {
 }
 
 var bash = shell{
+	name:            "bash",
 	initCode:        tmpl(`complete -o default -o bashdefault -C {{.BinPath}} {{.BinName}}`),
 	dynamicInitCode: tmpl(`source <({{.BinName}} {{.SubCmdName}} -c bash)`),
 	initFilePath:    "~/.bashrc",
 }
 
 var zsh = shell{
+	name: "zsh",
 	initCode: tmpl(`autoload -U +X bashcompinit && bashcompinit
 complete -o default -o bashdefault -C {{.BinPath}} {{.BinName}}`),
 	dynamicInitCode: tmpl(`source <({{.BinName}} {{.SubCmdName}} -c zsh)`),
@@ -42,6 +48,7 @@ complete -o default -o bashdefault -C {{.BinPath}} {{.BinName}}`),
 }
 
 var fish = shell{
+	name: "fish",
 	initCode: tmpl(`function __complete_{{.BinName}}
     set -lx COMP_LINE (commandline -cp)
     test -z (commandline -ct)

@@ -10,7 +10,7 @@ import (
 )
 
 // Completion is a kong subcommand that prints out the shell code for
-// initializing tab completions in various shells. It also educates the
+// initializing tab completion in various shells. It also educates the
 // user what to do with the printed code.
 type Completion struct {
 	Shell string `arg:"" help:"The name of the shell you are using" enum:"bash,zsh,fish," default:""`
@@ -20,7 +20,7 @@ type Completion struct {
 // Help is a predefined kong method for printing the help text.
 func (c *Completion) Help() string {
 	return `
-Displays a command that you need to execute in order activate tab completions for this program.
+Displays a command that you need to execute in order activate tab completion for this program.
 
 For permanent activation (i.e. beyond the current shell session), paste the command in your shell’s init file.
 
@@ -52,8 +52,9 @@ func (c *Completion) Run(ctx *kong.Context) error {
 			return binInfo.fill(sh.initCode)
 		} else {
 			return "" +
-				"Execute the following command, to activate tab completions for " + binInfo.BinName + " in your current shell session:\n\n    " + binInfo.fill(sh.dynamicInitCode) + "\n\n" +
-				"For permanent activation (beyond the current shell session), paste the command in your shell’s init file, which usually is: " + sh.initFilePath
+				"Execute the following command to activate tab completion for " + binInfo.BinName + " in " + sh.name + ":\n\n    " +
+				binInfo.fill(sh.dynamicInitCode) + "\n\n" +
+				"Note that this only takes effect for your current shell session. For permanent activation (beyond the current shell session), you can e.g. paste this command in your " + sh.name + "’s init file, which usually is: " + sh.initFilePath
 		}
 	})()
 	_, err = fmt.Fprint(ctx.Stdout, output+"\n")
@@ -91,5 +92,5 @@ func determineBinaryInfo(ctx *kong.Context) (binaryInfo, error) {
 	if err != nil {
 		return binaryInfo{}, errors.Wrapf(err, "couldn't determine absolute path to binary")
 	}
-	return binaryInfo{ctx.Model.Name, bin, "completion"}, nil
+	return binaryInfo{ctx.Model.Name, bin, ctx.Command()}, nil
 }

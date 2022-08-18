@@ -6,9 +6,9 @@ import (
 )
 
 type binaryInfo struct {
-	BinName    string
-	BinPath    string
-	SubCmdName string
+	BinName    string // The canonical name of the binary, e.g. `greet`
+	BinPath    string // The full path to the binary, e.g. `/usr/bin/greet`
+	SubCmdName string // The name of the invoked subcommand, e.g. `completion` for `greet completion`.
 }
 
 type template gotemplate.Template
