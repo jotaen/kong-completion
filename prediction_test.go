@@ -234,7 +234,7 @@ func runComplete(t *testing.T, parser *kong.Kong, line string, options []Option)
 	if parser != nil {
 		parser.Stdout = &buf
 	}
-	Configure(parser, options...)
+	Register(parser, options...)
 	return parseOutput(buf.String())
 }
 

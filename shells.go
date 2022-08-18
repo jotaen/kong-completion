@@ -1,18 +1,17 @@
 package kongcompletion
 
-import "text/template"
+import (
+	"github.com/pkg/errors"
+)
 
 type shell struct {
 	// initCode is a Go template for the shell initialization code.
-	initCode *template.Template
+	initCode *template
+
+	dynamicInitCode *template
 
 	// initFilePath is the path of the shell’s default init file, e.g. ~/.bashrc
 	initFilePath string
-}
-
-type binaryInfo struct {
-	BinName string
-	BinPath string
 }
 
 var shells = map[string]shell{
@@ -21,15 +20,25 @@ var shells = map[string]shell{
 	"fish": fish,
 }
 
+func newShellFromString(shellName string) (shell, error) {
+	sh, ok := shells[shellName]
+	if !ok {
+		return shell{}, errors.New("")
+	}
+	return sh, nil
+}
+
 var bash = shell{
-	initCode:     tmpl(`complete -o default -o bashdefault -C {{.BinPath}} {{.BinName}}`),
-	initFilePath: "~/.bashrc",
+	initCode:        tmpl(`complete -o default -o bashdefault -C {{.BinPath}} {{.BinName}}`),
+	dynamicInitCode: tmpl(`source <({{.BinName}} {{.SubCmdName}} -c bash)`),
+	initFilePath:    "~/.bashrc",
 }
 
 var zsh = shell{
 	initCode: tmpl(`autoload -U +X bashcompinit && bashcompinit
 complete -o default -o bashdefault -C {{.BinPath}} {{.BinName}}`),
-	initFilePath: "~/.zshrc",
+	dynamicInitCode: tmpl(`source <({{.BinName}} {{.SubCmdName}} -c zsh)`),
+	initFilePath:    "~/.zshrc",
 }
 
 var fish = shell{
@@ -40,15 +49,6 @@ var fish = shell{
     {{.BinPath}}
 end
 complete -f -c {{.BinName}} -a "(__complete_{{.BinName}})"`),
-	initFilePath: "~/.config/fish/config.fish",
-}
-
-// tmpl returns an unnamed go template from the given input string.
-// It panics if the template is malformed.
-func tmpl(tmpl string) *template.Template {
-	t, err := template.New("").Parse(tmpl)
-	if err != nil {
-		panic(err)
-	}
-	return t
+	dynamicInitCode: tmpl(`{{.BinName}} {{.SubCmdName}} -c fish | source`),
+	initFilePath:    "~/.config/fish/config.fish",
 }

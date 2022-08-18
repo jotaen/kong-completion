@@ -1,7 +1,6 @@
 package kongcompletion
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/alecthomas/kong"
 	"github.com/pkg/errors"
@@ -14,24 +13,18 @@ import (
 // initializing tab completions in various shells. It also educates the
 // user what to do with the printed code.
 type Completion struct {
-	Bash bool `name:"bash" help:"Print the code for bash"`
-	Zsh  bool `name:"zsh" help:"Print the code for zsh"`
-	Fish bool `name:"fish" help:"Print the code for fish"`
+	Shell string `arg:"" help:"The name of the shell you are using" enum:"bash,zsh,fish," default:""`
+	Code  bool   `short:"c" help:"Generate the initialization code"`
 }
 
 // Help is a predefined kong method for printing the help text.
 func (c *Completion) Help() string {
-	sh, err := detectShell()
-	if err != nil {
-		sh = bash
-	}
-
 	return `
-The output of this command is code for instructing your shell to use tab completions for this program. After you have executed that code in your shell, the tab completions are available.
+Displays a command that you need to execute in order activate tab completions for this program.
 
-In order to persist the completions beyond your current shell session, put the code into your shell initialization file, e.g. in ` + sh.initFilePath + `
+For permanent activation (i.e. beyond the current shell session), paste the command in your shell’s init file.
 
-If no flag for the shell type is specified, it tries to detect your current login shell automatically.
+If no shell is specified, it tries to detect your current login shell automatically.
 `
 }
 
@@ -42,13 +35,10 @@ func (c *Completion) Run(ctx *kong.Context) error {
 		return err
 	}
 
+	// Determine targeted shell.
 	sh, err := (func() (shell, error) {
-		if c.Bash {
-			return bash, nil
-		} else if c.Zsh {
-			return zsh, nil
-		} else if c.Fish {
-			return fish, nil
+		if c.Shell != "" {
+			return newShellFromString(c.Shell)
 		}
 		return detectShell()
 	})()
@@ -56,8 +46,17 @@ func (c *Completion) Run(ctx *kong.Context) error {
 		return err
 	}
 
-	output := expandInitTemplate(binInfo, sh) + "\n"
-	_, err = fmt.Fprint(ctx.Stdout, output)
+	// Generate command output.
+	output := (func() string {
+		if c.Code {
+			return binInfo.fill(sh.initCode)
+		} else {
+			return "" +
+				"Execute the following command, to activate tab completions for " + binInfo.BinName + " in your current shell session:\n\n    " + binInfo.fill(sh.dynamicInitCode) + "\n\n" +
+				"For permanent activation (beyond the current shell session), paste the command in your shell’s init file, which usually is: " + sh.initFilePath
+		}
+	})()
+	_, err = fmt.Fprint(ctx.Stdout, output+"\n")
 	if err != nil {
 		return err
 	}
@@ -92,16 +91,5 @@ func determineBinaryInfo(ctx *kong.Context) (binaryInfo, error) {
 	if err != nil {
 		return binaryInfo{}, errors.Wrapf(err, "couldn't determine absolute path to binary")
 	}
-	return binaryInfo{ctx.Model.Name, bin}, nil
-
-}
-
-// expandInitTemplate resolves the init template of the given shell.
-func expandInitTemplate(bi binaryInfo, sh shell) string {
-	result := &bytes.Buffer{}
-	err := sh.initCode.Execute(result, bi)
-	if err != nil {
-		panic(err)
-	}
-	return result.String()
+	return binaryInfo{ctx.Model.Name, bin, "completion"}, nil
 }

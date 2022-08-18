@@ -15,7 +15,7 @@ type options struct {
 	errorHandler func(error)
 }
 
-// Option is a configuration option for running Configure
+// Option is a configuration option for running Register
 type Option func(*options)
 
 // WithPredictor use the named predictor
@@ -74,8 +74,8 @@ func Command(parser *kong.Kong, opt ...Option) (complete.Command, error) {
 	return *command, err
 }
 
-// Configure configures a kong app for intercepting completions.
-func Configure(parser *kong.Kong, opt ...Option) {
+// Register configures a kong app for intercepting completions.
+func Register(parser *kong.Kong, opt ...Option) {
 	if parser == nil {
 		return
 	}

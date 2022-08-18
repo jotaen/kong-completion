@@ -43,16 +43,20 @@ func main() {
 	// Create kong app, but don’t run arg parsing yet.
 	app := kong.Must(&GreetingApp{})
 
-	// Setup completions.
-	kongcompletion.Configure(app, predictNames)
+	// Register completions.
+	kongcompletion.Register(app, predictNames)
 
-	// Parse
+	// Parse arguments and run program.
 	ctx, err := app.Parse(os.Args[1:])
 	if err != nil {
-		panic(err)
+		app.Printf("%s", err)
+		app.Exit(1)
+		return
 	}
 	err = ctx.Run()
 	if err != nil {
-		panic(err)
+		app.Printf("%s", err)
+		app.Exit(1)
+		return
 	}
 }
