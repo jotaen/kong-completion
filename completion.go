@@ -52,9 +52,9 @@ func (c *Completion) Run(ctx *kong.Context) error {
 			return binInfo.fill(sh.initCode)
 		} else {
 			return "" +
-				"Execute the following command to activate tab completion for " + binInfo.BinName + " in " + sh.name + ":\n\n    " +
-				binInfo.fill(sh.dynamicInitCode) + "\n\n" +
-				"Note that this only takes effect for your current shell session. For permanent activation (beyond the current shell session), you can e.g. paste this command in your " + sh.name + "’s init file, which usually is: " + sh.initFilePath
+				"Execute the following command to activate tab completion for " + binInfo.BinName + " in " + sh.name + ":\n\n" +
+				"    " + binInfo.fill(sh.dynamicInitCode) + "\n\n" +
+				"Note that this only takes effect for your current shell session. For permanent activation (beyond the current shell session), you can e.g. paste this command into your " + sh.name + "’s init file, which usually is: " + sh.initFilePath
 		}
 	})()
 	_, err = fmt.Fprint(ctx.Stdout, output+"\n")
