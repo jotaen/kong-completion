@@ -92,5 +92,5 @@ func determineBinaryInfo(ctx *kong.Context) (binaryInfo, error) {
 	if err != nil {
 		return binaryInfo{}, errors.Wrapf(err, "couldn't determine absolute path to binary")
 	}
-	return binaryInfo{ctx.Model.Name, bin, ctx.Command()}, nil
+	return binaryInfo{ctx.Model.Name, bin, ctx.Selected().Name}, nil
 }
