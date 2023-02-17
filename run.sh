@@ -1,28 +1,21 @@
-#!/bin/sh
+#!/bin/bash
 
 # Build the greet example app.
-run_build() {
+run::build() {
 	go build example/greet.go
 }
 
-# Install all dependencies
-run_install() {
+# Install all dependencies.
+run::install() {
 	go get -t ./...
 }
 
-# Execute all tests
-run_test() {
+# Execute all tests.
+run::test() {
 	go test ./...
 }
 
-# Reformat all code
-run_format() {
+# Reformat all code.
+run::format() {
 	go fmt ./...
-}
-
-# Static code (style) analysis
-run_lint() {
-  set -o errexit
-  go vet ./...
-  staticcheck ./...
 }
