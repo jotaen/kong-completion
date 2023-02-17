@@ -13,6 +13,7 @@ type options struct {
 	predictors   map[string]complete.Predictor
 	exitFunc     func(code int)
 	errorHandler func(error)
+	overrides    map[string]bool
 }
 
 // Option is a configuration option for running Register
@@ -51,6 +52,27 @@ func WithErrorHandler(handler func(error)) Option {
 	}
 }
 
+// WithFlagOverrides registers overrides for hidden commands / flags
+func WithFlagOverrides(overrides ...map[string]bool) Option {
+	allOverrides := make(map[string]bool)
+	for _, os := range overrides {
+		for k, v := range os {
+			allOverrides[k] = v
+		}
+	}
+	return func(o *options) {
+		o.overrides = allOverrides
+	}
+}
+
+func (o *options) Skip(f *kong.Flag) bool {
+	doShow, wasSet := o.overrides[f.Name]
+	if !wasSet {
+		return f.Hidden
+	}
+	return !doShow
+}
+
 func buildOptions(opt ...Option) *options {
 	opts := &options{
 		predictors: map[string]complete.Predictor{},
@@ -67,7 +89,7 @@ func Command(parser *kong.Kong, opt ...Option) (complete.Command, error) {
 	if parser == nil || parser.Model == nil {
 		return complete.Command{}, nil
 	}
-	command, err := nodeCommand(parser.Model.Node, opts.predictors)
+	command, err := nodeCommand(parser.Model.Node, opts)
 	if err != nil {
 		return complete.Command{}, err
 	}
@@ -103,7 +125,7 @@ func Register(parser *kong.Kong, opt ...Option) {
 	}
 }
 
-func nodeCommand(node *kong.Node, predictors map[string]complete.Predictor) (*complete.Command, error) {
+func nodeCommand(node *kong.Node, opts *options) (*complete.Command, error) {
 	if node == nil {
 		return nil, nil
 	}
@@ -117,7 +139,7 @@ func nodeCommand(node *kong.Node, predictors map[string]complete.Predictor) (*co
 		if child == nil || child.Hidden {
 			continue
 		}
-		childCmd, err := nodeCommand(child, predictors)
+		childCmd, err := nodeCommand(child, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -127,10 +149,10 @@ func nodeCommand(node *kong.Node, predictors map[string]complete.Predictor) (*co
 	}
 
 	for _, flag := range node.Flags {
-		if flag == nil || flag.Hidden {
+		if flag == nil || opts.Skip(flag) {
 			continue
 		}
-		predictor, err := flagPredictor(flag, predictors)
+		predictor, err := flagPredictor(flag, opts.predictors)
 		if err != nil {
 			return nil, err
 		}
@@ -140,7 +162,7 @@ func nodeCommand(node *kong.Node, predictors map[string]complete.Predictor) (*co
 	}
 
 	boolFlags, nonBoolFlags := boolAndNonBoolFlags(node.Flags)
-	pps, err := positionalPredictors(node.Positional, predictors)
+	pps, err := positionalPredictors(node.Positional, opts.predictors)
 	if err != nil {
 		return nil, err
 	}

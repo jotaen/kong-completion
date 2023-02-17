@@ -33,7 +33,9 @@ func TestComplete(t *testing.T) {
 			Embedded embed  `kong:"embed"`
 			Bar      string `kong:"predictor=things"`
 			Baz      bool
-			Qux      bool     `kong:"hidden"`
+			Qux      bool     `kong:"hidden"` // regular hidden
+			Quy      bool     // hidden via override option
+			Quz      bool     `kong:"hidden"` // unhidden via override option
 			Rabbit   struct{} `kong:"cmd"`
 			Duck     struct{} `kong:"cmd"`
 		} `kong:"cmd"`
@@ -70,7 +72,12 @@ func TestComplete(t *testing.T) {
 		},
 		{
 			parser: kong.Must(&cli),
-			want:   []string{"--bar", "--baz", "--lion", "--help", "-h"},
+			want:   []string{"--bar", "--baz", "--quz", "--lion", "--help", "-h"},
+			line:   "myApp foo -",
+		},
+		{
+			parser: kong.Must(&cli),
+			want:   []string{"--bar", "--baz", "--quz", "--lion", "--help", "-h"},
 			line:   "myApp foo -",
 		},
 		{
@@ -85,14 +92,13 @@ func TestComplete(t *testing.T) {
 		},
 		{
 			parser: kong.Must(&cli),
-			want:   []string{"--bar", "--baz", "--lion", "--help", "-h"},
+			want:   []string{"--bar", "--baz", "--quz", "--lion", "--help", "-h"},
 			line:   "myApp foo --baz -",
 		},
 		{
 			parser: kong.Must(&cli),
-
-			want: []string{"thing1", "thing2"},
-			line: "myApp foo --bar ",
+			want:   []string{"thing1", "thing2"},
+			line:   "myApp foo --bar ",
 		},
 		{
 			parser: kong.Must(&cli),
@@ -145,7 +151,13 @@ func TestComplete(t *testing.T) {
 			name = td.line
 		}
 		t.Run(name, func(t *testing.T) {
-			options := []Option{WithPredictors(predictors)}
+			options := []Option{
+				WithPredictors(predictors),
+				WithFlagOverrides(map[string]bool{
+					"quy": false,
+					"quz": true,
+				}),
+			}
 			got := runComplete(t, td.parser, td.line, options)
 			assert.ElementsMatch(t, td.want, got)
 		})
