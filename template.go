@@ -9,6 +9,7 @@ type binaryInfo struct {
 	BinName    string // The canonical name of the binary, e.g. `greet`
 	BinPath    string // The full path to the binary, e.g. `/usr/bin/greet`
 	SubCmdName string // The name of the invoked subcommand, e.g. `completion` for `greet completion`.
+	Options    string // Options supplied to complete command
 }
 
 type template gotemplate.Template

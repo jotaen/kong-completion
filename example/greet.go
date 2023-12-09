@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/alecthomas/kong"
-	"github.com/jotaen/kong-completion"
-	"github.com/posener/complete"
 	"os"
 	"strings"
+
+	"github.com/alecthomas/kong"
+	kongcompletion "github.com/jotaen/kong-completion"
+	"github.com/posener/complete"
 )
 
 func main() {

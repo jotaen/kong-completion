@@ -1,20 +1,23 @@
 package kongcompletion
 
 import (
+	"errors"
 	"fmt"
-	"github.com/alecthomas/kong"
-	"github.com/pkg/errors"
-	"github.com/riywo/loginshell"
+
 	"os"
 	"path/filepath"
+
+	"github.com/alecthomas/kong"
+	"github.com/riywo/loginshell"
 )
 
 // Completion is a kong subcommand that prints out the shell code for
 // initializing tab completion in various shells. It also educates the
 // user what to do with the printed code.
 type Completion struct {
-	Shell string `arg:"" help:"The name of the shell you are using" enum:"bash,zsh,fish," default:""`
-	Code  bool   `short:"c" help:"Generate the initialization code"`
+	Shell             string `arg:"" help:"The name of the shell you are using" enum:"bash,zsh,fish," default:""`
+	NoDefaultFileComp bool   `help:"Whether or not to default to file comparison if no completion result is available"`
+	Code              bool   `short:"c" help:"Generate the initialization code"`
 }
 
 // Help is a predefined kong method for printing the help text.
@@ -30,7 +33,7 @@ If no shell is specified, it tries to detect your current login shell automatica
 
 // Run is a predefined kong method that contains the command’s main procedure.
 func (c *Completion) Run(ctx *kong.Context) error {
-	binInfo, err := determineBinaryInfo(ctx)
+	binInfo, err := determineBinaryInfo(ctx, c)
 	if err != nil {
 		return err
 	}
@@ -38,7 +41,7 @@ func (c *Completion) Run(ctx *kong.Context) error {
 	// Determine targeted shell.
 	sh, err := (func() (shell, error) {
 		if c.Shell != "" {
-			return newShellFromString(c.Shell)
+			return newShellFromString(c.Shell, c.NoDefaultFileComp)
 		}
 		return detectShell()
 	})()
@@ -83,14 +86,20 @@ func detectShell() (shell, error) {
 }
 
 // determineBinaryInfo tries to determine information about the current command.
-func determineBinaryInfo(ctx *kong.Context) (binaryInfo, error) {
+func determineBinaryInfo(ctx *kong.Context, cmd *Completion) (binaryInfo, error) {
 	bin, err := os.Executable()
 	if err != nil {
-		return binaryInfo{}, errors.Wrapf(err, "couldn't determine absolute path to binary")
+		return binaryInfo{}, fmt.Errorf("couldn't determine absolute path to binary: %w", err)
 	}
 	bin, err = filepath.Abs(bin)
 	if err != nil {
-		return binaryInfo{}, errors.Wrapf(err, "couldn't determine absolute path to binary")
+		return binaryInfo{}, fmt.Errorf("couldn't determine absolute path to binary: %w", err)
 	}
-	return binaryInfo{ctx.Model.Name, bin, ctx.Selected().Name}, nil
+
+	var opts string
+	if !cmd.NoDefaultFileComp {
+		opts = "-o default -o bashdefault"
+	}
+
+	return binaryInfo{ctx.Model.Name, bin, ctx.Selected().Name, opts}, nil
 }

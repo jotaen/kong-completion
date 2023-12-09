@@ -1,7 +1,7 @@
 package kongcompletion
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 )
 
 type shell struct {
@@ -24,7 +24,7 @@ var shells = map[string]shell{
 	fish.name: fish,
 }
 
-func newShellFromString(shellName string) (shell, error) {
+func newShellFromString(shellName string, noDefaultFileComp bool) (shell, error) {
 	sh, ok := shells[shellName]
 	if !ok {
 		return shell{}, errors.New("")
@@ -34,7 +34,7 @@ func newShellFromString(shellName string) (shell, error) {
 
 var bash = shell{
 	name:            "bash",
-	initCode:        tmpl(`complete -o default -o bashdefault -C {{.BinPath}} {{.BinName}}`),
+	initCode:        tmpl(`complete {{.Options}} -C {{.BinPath}} {{.BinName}}`),
 	dynamicInitCode: tmpl(`source <({{.BinName}} {{.SubCmdName}} -c bash)`),
 	initFilePath:    "~/.bashrc",
 }
@@ -42,7 +42,7 @@ var bash = shell{
 var zsh = shell{
 	name: "zsh",
 	initCode: tmpl(`autoload -U +X bashcompinit && bashcompinit
-complete -o default -o bashdefault -C {{.BinPath}} {{.BinName}}`),
+complete {{.Options}} -C {{.BinPath}} {{.BinName}}`),
 	dynamicInitCode: tmpl(`source <({{.BinName}} {{.SubCmdName}} -c zsh)`),
 	initFilePath:    "~/.zshrc",
 }
