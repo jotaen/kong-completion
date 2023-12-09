@@ -117,6 +117,7 @@ func Register(parser *kong.Kong, opt ...Option) {
 		errHandler(err)
 		exitFunc(1)
 	}
+
 	cmp := complete.New(parser.Model.Name, cmd)
 	cmp.Out = parser.Stdout
 	done := cmp.Complete()

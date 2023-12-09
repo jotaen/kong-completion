@@ -24,7 +24,7 @@ var shells = map[string]shell{
 	fish.name: fish,
 }
 
-func newShellFromString(shellName string, noDefaultFileComp bool) (shell, error) {
+func newShellFromString(shellName string) (shell, error) {
 	sh, ok := shells[shellName]
 	if !ok {
 		return shell{}, errors.New("")
