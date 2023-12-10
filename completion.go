@@ -19,12 +19,6 @@ type Completion struct {
 	Code  bool   `short:"c" help:"Generate the initialization code"`
 }
 
-// CompletionNoFileComp is a kong subcommand that is similar to [Completion]
-// but does not enable file completion per default for all commands.
-type CompletionNoFileComp struct {
-	Completion
-}
-
 // Help is a predefined kong method for printing the help text.
 func (c *Completion) Help() string {
 	return `
