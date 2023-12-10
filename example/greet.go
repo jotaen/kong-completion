@@ -34,9 +34,7 @@ func main() {
 	}
 }
 
-// GreetingApp is a sample app. The `Completion` subcommand is optional; it’s purpose is
-// to help the user to configure the completions for their shell. (The completions themselves
-// would work without this command, though.)
+// GreetingApp is a sample app.
 type GreetingApp struct {
 	Hello      Hello                     `cmd:"" help:"Prints a greeting"`
 	Completion kongcompletion.Completion `cmd:"" help:"Outputs shell code for initialising tab completions"`

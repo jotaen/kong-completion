@@ -38,16 +38,7 @@ If no shell is specified, it tries to detect your current login shell automatica
 
 // Run is a predefined kong method that contains the command’s main procedure.
 func (c *Completion) Run(ctx *kong.Context) error {
-	return runCompletion(ctx, c, "-o default -o bashdefault")
-}
-
-// Run is a predefined kong method that contains the command’s main procedure.
-func (c *CompletionNoFileComp) Run(ctx *kong.Context) error {
-	return runCompletion(ctx, &c.Completion, "")
-}
-
-func runCompletion(ctx *kong.Context, c *Completion, opts string) error {
-	binInfo, err := determineBinaryInfo(ctx, opts)
+	binInfo, err := determineBinaryInfo(ctx)
 	if err != nil {
 		return err
 	}
@@ -70,7 +61,7 @@ func runCompletion(ctx *kong.Context, c *Completion, opts string) error {
 		} else {
 			return "" +
 				"Execute the following command to activate tab completion for " + binInfo.BinName + " in " + sh.name + ":\n\n" +
-				"    " + binInfo.fill(sh.dynamicInitCode) + "\n\n" +
+				"    " + binInfo.fill(sh.configFileCode) + "\n\n" +
 				"Note that this only takes effect for your current shell session. For permanent activation (beyond the current shell session), you can e.g. paste this command into your " + sh.name + "’s init file, which usually is: " + sh.initFilePath
 		}
 	})()
@@ -100,15 +91,27 @@ func detectShell() (shell, error) {
 }
 
 // determineBinaryInfo tries to determine information about the current command.
-func determineBinaryInfo(ctx *kong.Context, opts string) (binaryInfo, error) {
+func determineBinaryInfo(ctx *kong.Context) (templateData, error) {
 	bin, err := os.Executable()
 	if err != nil {
-		return binaryInfo{}, fmt.Errorf("couldn't determine absolute path to binary: %w", err)
+		return templateData{}, fmt.Errorf("couldn't determine absolute path to binary: %w", err)
 	}
 	bin, err = filepath.Abs(bin)
 	if err != nil {
-		return binaryInfo{}, fmt.Errorf("couldn't determine absolute path to binary: %w", err)
+		return templateData{}, fmt.Errorf("couldn't determine absolute path to binary: %w", err)
 	}
 
-	return binaryInfo{ctx.Model.Name, bin, ctx.Selected().Name, opts}, nil
+	useDefaultShellComp := func() bool {
+		if ctx.Selected().Tag.Get("completion-shell-default") == "false" {
+			return false
+		}
+		return true
+	}()
+
+	return templateData{
+		BinName:         ctx.Model.Name,
+		BinPath:         bin,
+		SubCmdName:      ctx.Selected().Name,
+		UseShellDefault: useDefaultShellComp,
+	}, nil
 }
