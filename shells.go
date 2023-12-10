@@ -1,18 +1,19 @@
 package kongcompletion
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 )
 
 type shell struct {
 	// name is the name of the shell
 	name string
 
-	// initCode is a template for the shell initialization code.
+	// initCode is the actual code that registers the completion in the shell.
 	initCode *template
 
-	// dynamicInitCode is a template for the command that prints the shell initialization code.
-	dynamicInitCode *template
+	// configFileCode is the code that the user is supposed to put in
+	// their shell config file, e.g. ~/.bashrc
+	configFileCode *template
 
 	// initFilePath is the path of the shell’s default init file, e.g. ~/.bashrc
 	initFilePath string
@@ -33,18 +34,18 @@ func newShellFromString(shellName string) (shell, error) {
 }
 
 var bash = shell{
-	name:            "bash",
-	initCode:        tmpl(`complete -o default -o bashdefault -C {{.BinPath}} {{.BinName}}`),
-	dynamicInitCode: tmpl(`source <({{.BinName}} {{.SubCmdName}} -c bash)`),
-	initFilePath:    "~/.bashrc",
+	name:           "bash",
+	initCode:       tmpl(`complete{{if .UseShellDefault}} -o default -o bashdefault{{ end }} -C {{.BinPath}} {{.BinName}}`),
+	configFileCode: tmpl(`source <({{.BinName}} {{.SubCmdName}} -c bash)`),
+	initFilePath:   "~/.bashrc",
 }
 
 var zsh = shell{
 	name: "zsh",
 	initCode: tmpl(`autoload -U +X bashcompinit && bashcompinit
-complete -o default -o bashdefault -C {{.BinPath}} {{.BinName}}`),
-	dynamicInitCode: tmpl(`source <({{.BinName}} {{.SubCmdName}} -c zsh)`),
-	initFilePath:    "~/.zshrc",
+complete{{if .UseShellDefault}} -o default -o bashdefault{{ end }} -C {{.BinPath}} {{.BinName}}`),
+	configFileCode: tmpl(`source <({{.BinName}} {{.SubCmdName}} -c zsh)`),
+	initFilePath:   "~/.zshrc",
 }
 
 var fish = shell{
@@ -56,6 +57,6 @@ var fish = shell{
     {{.BinPath}}
 end
 complete -f -c {{.BinName}} -a "(__complete_{{.BinName}})"`),
-	dynamicInitCode: tmpl(`{{.BinName}} {{.SubCmdName}} -c fish | source`),
-	initFilePath:    "~/.config/fish/config.fish",
+	configFileCode: tmpl(`{{.BinName}} {{.SubCmdName}} -c fish | source`),
+	initFilePath:   "~/.config/fish/config.fish",
 }

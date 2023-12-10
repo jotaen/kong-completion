@@ -1,12 +1,14 @@
 package kongcompletion
 
 import (
+	"errors"
 	"fmt"
-	"github.com/alecthomas/kong"
-	"github.com/pkg/errors"
-	"github.com/riywo/loginshell"
+
 	"os"
 	"path/filepath"
+
+	"github.com/alecthomas/kong"
+	"github.com/riywo/loginshell"
 )
 
 // Completion is a kong subcommand that prints out the shell code for
@@ -53,7 +55,7 @@ func (c *Completion) Run(ctx *kong.Context) error {
 		} else {
 			return "" +
 				"Execute the following command to activate tab completion for " + binInfo.BinName + " in " + sh.name + ":\n\n" +
-				"    " + binInfo.fill(sh.dynamicInitCode) + "\n\n" +
+				"    " + binInfo.fill(sh.configFileCode) + "\n\n" +
 				"Note that this only takes effect for your current shell session. For permanent activation (beyond the current shell session), you can e.g. paste this command into your " + sh.name + "’s init file, which usually is: " + sh.initFilePath
 		}
 	})()
@@ -83,14 +85,27 @@ func detectShell() (shell, error) {
 }
 
 // determineBinaryInfo tries to determine information about the current command.
-func determineBinaryInfo(ctx *kong.Context) (binaryInfo, error) {
+func determineBinaryInfo(ctx *kong.Context) (templateData, error) {
 	bin, err := os.Executable()
 	if err != nil {
-		return binaryInfo{}, errors.Wrapf(err, "couldn't determine absolute path to binary")
+		return templateData{}, fmt.Errorf("couldn't determine absolute path to binary: %w", err)
 	}
 	bin, err = filepath.Abs(bin)
 	if err != nil {
-		return binaryInfo{}, errors.Wrapf(err, "couldn't determine absolute path to binary")
+		return templateData{}, fmt.Errorf("couldn't determine absolute path to binary: %w", err)
 	}
-	return binaryInfo{ctx.Model.Name, bin, ctx.Selected().Name}, nil
+
+	useDefaultShellComp := func() bool {
+		if ctx.Selected().Tag.Get("completion-shell-default") == "false" {
+			return false
+		}
+		return true
+	}()
+
+	return templateData{
+		BinName:         ctx.Model.Name,
+		BinPath:         bin,
+		SubCmdName:      ctx.Selected().Name,
+		UseShellDefault: useDefaultShellComp,
+	}, nil
 }
