@@ -146,6 +146,9 @@ func nodeCommand(node *kong.Node, opts *options) (*complete.Command, error) {
 		}
 		if childCmd != nil {
 			cmd.Sub[child.Name] = *childCmd
+			for _, alias := range child.Aliases {
+				cmd.Sub[alias] = *childCmd
+			}
 		}
 	}
 

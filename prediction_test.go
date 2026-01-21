@@ -37,7 +37,7 @@ func TestComplete(t *testing.T) {
 			Quy      bool     // hidden via override option
 			Quz      bool     `kong:"hidden"` // unhidden via override option
 			Rabbit   struct{} `kong:"cmd"`
-			Duck     struct{} `kong:"cmd"`
+			Duck     struct{} `kong:"cmd,aliases=bird"`
 		} `kong:"cmd"`
 		Bar struct {
 			Tiger   string `kong:"arg,predictor=things"`
@@ -62,7 +62,7 @@ func TestComplete(t *testing.T) {
 		},
 		{
 			parser: kong.Must(&cli),
-			want:   []string{"rabbit", "duck"},
+			want:   []string{"rabbit", "duck", "bird"},
 			line:   "myApp foo ",
 		},
 		{
