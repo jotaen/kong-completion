@@ -33,6 +33,7 @@ func TestComplete(t *testing.T) {
 			Embedded embed  `kong:"embed"`
 			Bar      string `kong:"predictor=things"`
 			Baz      bool
+			Tata     string   `kong:"aliases=titi"`
 			Qux      bool     `kong:"hidden"` // regular hidden
 			Quy      bool     // hidden via override option
 			Quz      bool     `kong:"hidden"` // unhidden via override option
@@ -72,12 +73,12 @@ func TestComplete(t *testing.T) {
 		},
 		{
 			parser: kong.Must(&cli),
-			want:   []string{"--bar", "--baz", "--quz", "--lion", "--help", "-h"},
+			want:   []string{"--bar", "--baz", "--tata", "--titi", "--quz", "--lion", "--help", "-h"},
 			line:   "myApp foo -",
 		},
 		{
 			parser: kong.Must(&cli),
-			want:   []string{"--bar", "--baz", "--quz", "--lion", "--help", "-h"},
+			want:   []string{"--bar", "--baz", "--tata", "--titi", "--quz", "--lion", "--help", "-h"},
 			line:   "myApp foo -",
 		},
 		{
@@ -87,12 +88,12 @@ func TestComplete(t *testing.T) {
 		},
 		{
 			parser: kong.Must(&cli),
-			want:   []string{"rabbit", "duck"},
+			want:   []string{"rabbit", "duck", "bird"},
 			line:   "myApp foo --baz ",
 		},
 		{
 			parser: kong.Must(&cli),
-			want:   []string{"--bar", "--baz", "--quz", "--lion", "--help", "-h"},
+			want:   []string{"--bar", "--baz", "--tata", "--titi", "--quz", "--lion", "--help", "-h"},
 			line:   "myApp foo --baz -",
 		},
 		{

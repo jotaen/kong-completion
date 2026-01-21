@@ -189,6 +189,9 @@ func flagNamesWithHyphens(flags ...*kong.Flag) []string {
 		if flag.Short != 0 {
 			names = append(names, "-"+string(flag.Short))
 		}
+		for _, alias := range flag.Aliases {
+			names = append(names, "--"+alias)
+		}
 	}
 	return names
 }
