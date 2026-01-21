@@ -89,7 +89,7 @@ func Command(parser *kong.Kong, opt ...Option) (complete.Command, error) {
 	if parser == nil || parser.Model == nil {
 		return complete.Command{}, nil
 	}
-	command, err := nodeCommand(parser.Model.Node, opts)
+	command, err := nodeCommand(parser.Model.Node, opts, nil)
 	if err != nil {
 		return complete.Command{}, err
 	}
@@ -126,10 +126,11 @@ func Register(parser *kong.Kong, opt ...Option) {
 	}
 }
 
-func nodeCommand(node *kong.Node, opts *options) (*complete.Command, error) {
+func nodeCommand(node *kong.Node, opts *options, vars kong.Vars) (*complete.Command, error) {
 	if node == nil {
 		return nil, nil
 	}
+	vars = vars.CloneWith(node.Vars())
 
 	cmd := complete.Command{
 		Sub:         complete.Commands{},
@@ -140,7 +141,7 @@ func nodeCommand(node *kong.Node, opts *options) (*complete.Command, error) {
 		if child == nil || child.Hidden {
 			continue
 		}
-		childCmd, err := nodeCommand(child, opts)
+		childCmd, err := nodeCommand(child, opts, vars)
 		if err != nil {
 			return nil, err
 		}
@@ -156,7 +157,7 @@ func nodeCommand(node *kong.Node, opts *options) (*complete.Command, error) {
 		if flag == nil || opts.Skip(flag) {
 			continue
 		}
-		predictor, err := flagPredictor(flag, opts.predictors)
+		predictor, err := flagPredictor(flag, opts.predictors, vars)
 		if err != nil {
 			return nil, err
 		}
@@ -166,7 +167,7 @@ func nodeCommand(node *kong.Node, opts *options) (*complete.Command, error) {
 	}
 
 	boolFlags, nonBoolFlags := boolAndNonBoolFlags(node.Flags)
-	pps, err := positionalPredictors(node.Positional, opts.predictors)
+	pps, err := positionalPredictors(node.Positional, opts.predictors, vars)
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +218,7 @@ type kongTag interface {
 	Get(string) string
 }
 
-func tagPredictor(tag kongTag, predictors map[string]complete.Predictor) (complete.Predictor, error) {
+func tagPredictor(tag kongTag, predictors map[string]complete.Predictor, vars kong.Vars) (complete.Predictor, error) {
 	if tag == nil {
 		return nil, nil
 	}
@@ -228,6 +229,12 @@ func tagPredictor(tag kongTag, predictors map[string]complete.Predictor) (comple
 		predictors = map[string]complete.Predictor{}
 	}
 	predictorName := tag.Get(predictorTag)
+
+	predictorName, err := interpolate(predictorName, vars, nil)
+	if err != nil {
+		return nil, fmt.Errorf("interpolating predictor name %q: %w", predictorName, err)
+	}
+
 	predictor, ok := predictors[predictorName]
 	if !ok {
 		return nil, fmt.Errorf("no predictor with name %q", predictorName)
@@ -235,11 +242,11 @@ func tagPredictor(tag kongTag, predictors map[string]complete.Predictor) (comple
 	return predictor, nil
 }
 
-func valuePredictor(value *kong.Value, predictors map[string]complete.Predictor) (complete.Predictor, error) {
+func valuePredictor(value *kong.Value, predictors map[string]complete.Predictor, vars kong.Vars) (complete.Predictor, error) {
 	if value == nil {
 		return nil, nil
 	}
-	predictor, err := tagPredictor(value.Tag, predictors)
+	predictor, err := tagPredictor(value.Tag, predictors, vars.CloneWith(value.Tag.Vars))
 	if err != nil {
 		return nil, err
 	}
@@ -260,11 +267,11 @@ func valuePredictor(value *kong.Value, predictors map[string]complete.Predictor)
 	}
 }
 
-func positionalPredictors(args []*kong.Positional, predictors map[string]complete.Predictor) ([]complete.Predictor, error) {
+func positionalPredictors(args []*kong.Positional, predictors map[string]complete.Predictor, vars kong.Vars) ([]complete.Predictor, error) {
 	res := make([]complete.Predictor, len(args))
 	var err error
 	for i, arg := range args {
-		res[i], err = valuePredictor(arg, predictors)
+		res[i], err = valuePredictor(arg, predictors, vars)
 		if err != nil {
 			return nil, err
 		}
@@ -272,6 +279,6 @@ func positionalPredictors(args []*kong.Positional, predictors map[string]complet
 	return res, nil
 }
 
-func flagPredictor(flag *kong.Flag, predictors map[string]complete.Predictor) (complete.Predictor, error) {
-	return valuePredictor(flag.Value, predictors)
+func flagPredictor(flag *kong.Flag, predictors map[string]complete.Predictor, vars kong.Vars) (complete.Predictor, error) {
+	return valuePredictor(flag.Value, predictors, vars)
 }
