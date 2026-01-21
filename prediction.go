@@ -146,6 +146,9 @@ func nodeCommand(node *kong.Node, opts *options) (*complete.Command, error) {
 		}
 		if childCmd != nil {
 			cmd.Sub[child.Name] = *childCmd
+			for _, alias := range child.Aliases {
+				cmd.Sub[alias] = *childCmd
+			}
 		}
 	}
 
@@ -185,6 +188,9 @@ func flagNamesWithHyphens(flags ...*kong.Flag) []string {
 		names = append(names, "--"+flag.Name)
 		if flag.Short != 0 {
 			names = append(names, "-"+string(flag.Short))
+		}
+		for _, alias := range flag.Aliases {
+			names = append(names, "--"+alias)
 		}
 	}
 	return names
