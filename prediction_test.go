@@ -50,6 +50,8 @@ func TestComplete(t *testing.T) {
 			BooFlag  bool   `kong:"name=boofl,short=b"`
 		} `kong:"cmd,set=a=other"`
 		Baz struct{} `kong:"cmd,hidden"`
+
+		Global string `kong:""`
 	}
 
 	for _, td := range []completeTest{
@@ -75,13 +77,13 @@ func TestComplete(t *testing.T) {
 		},
 		{
 			parser: kong.Must(&cli),
-			want:   []string{"--bar", "--baz", "--tata", "--titi", "--xuxu", "--xoxo", "--xixi", "--quz", "--lion", "--help", "-h"},
+			want:   []string{"--bar", "--baz", "--tata", "--titi", "--xuxu", "--xoxo", "--xixi", "--quz", "--lion", "--help", "-h", "--global"},
 			line:   "myApp foo -",
 		},
 		{
 			parser: kong.Must(&cli),
-			want:   []string{"--bar", "--baz", "--tata", "--titi", "--xuxu", "--xoxo", "--xixi", "--quz", "--lion", "--help", "-h"},
-			line:   "myApp foo -",
+			want:   []string{"--bar", "--baz", "--tata", "--titi", "--xuxu", "--xoxo", "--xixi", "--quz", "--lion", "--help", "--global"},
+			line:   "myApp foo --",
 		},
 		{
 			parser: kong.Must(&cli),
@@ -95,7 +97,7 @@ func TestComplete(t *testing.T) {
 		},
 		{
 			parser: kong.Must(&cli),
-			want:   []string{"--bar", "--baz", "--tata", "--titi", "--xuxu", "--xoxo", "--xixi", "--quz", "--lion", "--help", "-h"},
+			want:   []string{"--bar", "--baz", "--tata", "--titi", "--xuxu", "--xoxo", "--xixi", "--quz", "--lion", "--help", "-h", "--global"},
 			line:   "myApp foo --baz -",
 		},
 		{
@@ -125,7 +127,7 @@ func TestComplete(t *testing.T) {
 		},
 		{
 			parser: kong.Must(&cli),
-			want:   []string{"-n", "--number", "--omg", "--help", "-h", "--boofl", "-b"},
+			want:   []string{"-n", "--number", "--omg", "--help", "-h", "--boofl", "-b", "--global"},
 			line:   "myApp bar -",
 		},
 		{
@@ -135,7 +137,7 @@ func TestComplete(t *testing.T) {
 		},
 		{
 			parser: kong.Must(&cli),
-			want:   []string{"-n", "--number", "--omg", "--help", "-h", "--boofl", "-b"},
+			want:   []string{"-n", "--number", "--omg", "--help", "-h", "--boofl", "-b", "--global"},
 			line:   "myApp bar -b thing1 -",
 		},
 		{
@@ -147,6 +149,21 @@ func TestComplete(t *testing.T) {
 			parser: kong.Must(&cli),
 			want:   []string{"otherthing1", "otherthing2"},
 			line:   "myApp bar -b thing1 --omg gizzles ",
+		},
+		{
+			parser: kong.Must(&cli),
+			want:   []string{"foo", "bar"},
+			line:   "myApp --global=test ",
+		},
+		{
+			parser: kong.Must(&cli),
+			want:   []string{"rabbit", "duck", "bird"},
+			line:   "myApp foo --global=test ",
+		},
+		{
+			parser: kong.Must(&cli),
+			want:   []string{"thing1", "thing2"},
+			line:   "myApp bar --global=test ",
 		},
 	} {
 		name := td.name

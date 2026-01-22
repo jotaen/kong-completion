@@ -2,6 +2,7 @@ package kongcompletion
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/alecthomas/kong"
 	"github.com/posener/complete"
@@ -89,7 +90,7 @@ func Command(parser *kong.Kong, opt ...Option) (complete.Command, error) {
 	if parser == nil || parser.Model == nil {
 		return complete.Command{}, nil
 	}
-	command, err := nodeCommand(parser.Model.Node, opts, nil)
+	command, err := nodeCommand(parser.Model.Node, opts, nil, flags{})
 	if err != nil {
 		return complete.Command{}, err
 	}
@@ -126,7 +127,12 @@ func Register(parser *kong.Kong, opt ...Option) {
 	}
 }
 
-func nodeCommand(node *kong.Node, opts *options, vars kong.Vars) (*complete.Command, error) {
+type flags struct {
+	argFlags  []*kong.Flag
+	boolFlags []*kong.Flag
+}
+
+func nodeCommand(node *kong.Node, opts *options, vars kong.Vars, flags flags) (*complete.Command, error) {
 	if node == nil {
 		return nil, nil
 	}
@@ -137,11 +143,15 @@ func nodeCommand(node *kong.Node, opts *options, vars kong.Vars) (*complete.Comm
 		GlobalFlags: complete.Flags{},
 	}
 
+	boolFlags, argFlags := boolAndNonBoolFlags(node.Flags)
+	flags.boolFlags = append(slices.Clone(flags.boolFlags), boolFlags...)
+	flags.argFlags = append(slices.Clone(flags.argFlags), argFlags...)
+
 	for _, child := range node.Children {
 		if child == nil || child.Hidden {
 			continue
 		}
-		childCmd, err := nodeCommand(child, opts, vars)
+		childCmd, err := nodeCommand(child, opts, vars, flags)
 		if err != nil {
 			return nil, err
 		}
@@ -166,15 +176,14 @@ func nodeCommand(node *kong.Node, opts *options, vars kong.Vars) (*complete.Comm
 		}
 	}
 
-	boolFlags, nonBoolFlags := boolAndNonBoolFlags(node.Flags)
 	pps, err := positionalPredictors(node.Positional, opts.predictors, vars)
 	if err != nil {
 		return nil, err
 	}
 	cmd.Args = &PositionalPredictor{
 		Predictors: pps,
-		ArgFlags:   flagNamesWithHyphens(nonBoolFlags...),
-		BoolFlags:  flagNamesWithHyphens(boolFlags...),
+		ArgFlags:   flagNamesWithHyphens(flags.argFlags...),
+		BoolFlags:  flagNamesWithHyphens(flags.boolFlags...),
 	}
 
 	return &cmd, nil
