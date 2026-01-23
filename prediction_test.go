@@ -36,9 +36,10 @@ func TestComplete(t *testing.T) {
 			Tata     string   `kong:"aliases=titi"`        // one alias
 			Xuxu     string   `kong:"aliases='xoxo,xixi'"` // multiple aliases
 			Qux      bool     `kong:"hidden"`              // regular hidden
-			Quy      bool     // hidden via override option
-			Quz      bool     `kong:"hidden"` // unhidden via override option
+			Quy      bool     `kong:"completion-enabled=false"`
+			Quz      bool     `kong:"hidden,completion-enabled=true"`
 			Rabbit   struct{} `kong:"cmd"`
+			Eagle    struct{} `kong:"cmd,completion-enabled=false"`
 			Duck     struct{} `kong:"cmd,aliases=bird"`
 		} `kong:"cmd"`
 		Bar struct {
@@ -173,10 +174,6 @@ func TestComplete(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			options := []Option{
 				WithPredictors(predictors),
-				WithFlagOverrides(map[string]bool{
-					"quy": false,
-					"quz": true,
-				}),
 			}
 			got := runComplete(t, td.parser, td.line, options)
 			assert.ElementsMatch(t, td.want, got)

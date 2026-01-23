@@ -17,15 +17,25 @@ It currently supports the following shells:
 
 See [the code of the sample app](./example/greet.go) for how to use the library.
 
-For the `Completion` subcommand, you can specify the following parameters in the annotation:
+In case you want to compile and run the demo app, keep in mind that completions only work for binaries in your $PATH, not for local ones (e.g. with `./` prefix). You also have to activate the completions first.
+
+## API Reference
+
+For flags and commands of your kong app, you can specify the following parameters in the annotation:
+
+- `completion-enabled`
+  - Whether this command or flag should be eligible for completions. By default, all flags and commands are eligible unless they are hidden. You can override this behaviour via this annotation parameter.
+  - Possible values: `true`, `false`
+  - Default value: derived from kong’s `hidden` flag – i.e., if the flag is hidden, it by default isn’t available for completion.
+  - Usage example: `completion-enabled:"true"`
+
+For the `Completion` subcommand specifically (as provided by this library), you can specify the following parameters in the annotation:
 
 - `completion-shell-default`
-  - Whether completions should fall back to the shell’s default ones, e.g. to complete file paths.
+  - Whether completions should fall back to the shell’s default completion behaviour, e.g. to complete file paths.
   - Possible values: `true`, `false`
   - Default value: `true`
   - Usage example: `completion-shell-default:"false"`
-
-In case you want to compile and run the demo app, keep in mind that completions only work for binaries in your $PATH, not for local ones (e.g. with `./` prefix).
 
 ## About
 
