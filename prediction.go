@@ -8,7 +8,10 @@ import (
 	"github.com/posener/complete"
 )
 
-const predictorTag = "predictor"
+const (
+	predictorTag = "completion-predictor"
+	enabledTag   = "completion-enabled"
+)
 
 type options struct {
 	predictors   map[string]complete.Predictor
@@ -168,13 +171,12 @@ func nodeCommand(node *kong.Node, opts *options, vars kong.Vars, flags flags) (*
 }
 
 func isCompletionEnabled(tag *kong.Tag) bool {
-	for _, i := range tag.GetAll("completion-enabled") {
-		if i == "false" {
-			return false
-		}
-		if i == "true" {
-			return true
-		}
+	v := tag.Get(enabledTag)
+	if v == "false" {
+		return false
+	}
+	if v == "true" {
+		return true
 	}
 	return !tag.Hidden
 }

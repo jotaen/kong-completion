@@ -43,7 +43,7 @@ type GreetingApp struct {
 type Hello struct {
 	Strong bool   `help:"Print the greeting in ALL CAPS!!!"`
 	Casual bool   `help:"In case you are more laid back, you know"`
-	Name   string `arg:"" help:"Personalize the greeting with your name!" predictor:"name" default:"World"`
+	Name   string `arg:"" help:"Personalize the greeting with your name!" completion-predictor:"name" default:"World"`
 }
 
 // Custom predictor. (Just as demo how these works.)

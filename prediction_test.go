@@ -31,7 +31,7 @@ func TestComplete(t *testing.T) {
 	var cli struct {
 		Foo struct {
 			Embedded embed  `kong:"embed"`
-			Bar      string `kong:"predictor=things"`
+			Bar      string `kong:"completion-predictor=things"`
 			Baz      bool
 			Tata     string   `kong:"aliases=titi"`        // one alias
 			Xuxu     string   `kong:"aliases='xoxo,xixi'"` // multiple aliases
@@ -43,9 +43,9 @@ func TestComplete(t *testing.T) {
 			Duck     struct{} `kong:"cmd,aliases=bird"`
 		} `kong:"cmd"`
 		Bar struct {
-			Tiger    string `kong:"arg,predictor=things"`
-			Bear     string `kong:"arg,predictor=otherthings"`
-			Elephant string `kong:"arg,predictor=${a}${b},set=b=things"`
+			Tiger    string `kong:"arg,completion-predictor=things"`
+			Bear     string `kong:"arg,completion-predictor=otherthings"`
+			Elephant string `kong:"arg,completion-predictor=${a}${b},set=b=things"`
 			OMG      string `kong:"required,enum='oh,my,gizzles'"`
 			Number   int    `kong:"required,short=n,enum='1,2,3'"`
 			BooFlag  bool   `kong:"name=boofl,short=b"`
