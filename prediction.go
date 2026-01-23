@@ -14,7 +14,6 @@ type options struct {
 	predictors   map[string]complete.Predictor
 	exitFunc     func(code int)
 	errorHandler func(error)
-	overrides    map[string]bool
 }
 
 // Option is a configuration option for running Register
@@ -51,27 +50,6 @@ func WithErrorHandler(handler func(error)) Option {
 	return func(o *options) {
 		o.errorHandler = handler
 	}
-}
-
-// WithFlagOverrides registers overrides for hidden commands / flags
-func WithFlagOverrides(overrides ...map[string]bool) Option {
-	allOverrides := make(map[string]bool)
-	for _, os := range overrides {
-		for k, v := range os {
-			allOverrides[k] = v
-		}
-	}
-	return func(o *options) {
-		o.overrides = allOverrides
-	}
-}
-
-func (o *options) Skip(f *kong.Flag) bool {
-	doShow, wasSet := o.overrides[f.Name]
-	if !wasSet {
-		return f.Hidden
-	}
-	return !doShow
 }
 
 func buildOptions(opt ...Option) *options {
@@ -148,7 +126,7 @@ func nodeCommand(node *kong.Node, opts *options, vars kong.Vars, flags flags) (*
 	flags.argFlags = append(slices.Clone(flags.argFlags), argFlags...)
 
 	for _, child := range node.Children {
-		if child == nil || child.Hidden {
+		if child == nil || !isCompletionEnabled(child.Tag) {
 			continue
 		}
 		childCmd, err := nodeCommand(child, opts, vars, flags)
@@ -164,7 +142,7 @@ func nodeCommand(node *kong.Node, opts *options, vars kong.Vars, flags flags) (*
 	}
 
 	for _, flag := range node.Flags {
-		if flag == nil || opts.Skip(flag) {
+		if flag == nil || !isCompletionEnabled(flag.Tag) {
 			continue
 		}
 		predictor, err := flagPredictor(flag, opts.predictors, vars)
@@ -187,6 +165,18 @@ func nodeCommand(node *kong.Node, opts *options, vars kong.Vars, flags flags) (*
 	}
 
 	return &cmd, nil
+}
+
+func isCompletionEnabled(tag *kong.Tag) bool {
+	for _, i := range tag.GetAll("completion-enabled") {
+		if i == "false" {
+			return false
+		}
+		if i == "true" {
+			return true
+		}
+	}
+	return !tag.Hidden
 }
 
 func flagNamesWithHyphens(flags ...*kong.Flag) []string {
