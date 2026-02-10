@@ -55,14 +55,14 @@ func TestPositionalPredictor_predictor(t *testing.T) {
 	}
 }
 
-func TestPositionalPredictor_predictor_variadic(t *testing.T) {
+func TestPositionalPredictor_predictor_cumulative(t *testing.T) {
 	predictor1 := complete.PredictSet("1")
 	predictor2 := complete.PredictSet("2")
 
-	t.Run("two predictors last variadic", func(t *testing.T) {
+	t.Run("two predictors, last flag is cumulative", func(t *testing.T) {
 		posPredictor := &PositionalPredictor{
-			Predictors:     []complete.Predictor{predictor1, predictor2},
-			LastIsVariadic: true,
+			Predictors:           []complete.Predictor{predictor1, predictor2},
+			LastFlagIsCumulative: true,
 		}
 		for args, want := range map[string]complete.Predictor{
 			``:              predictor1,
@@ -80,10 +80,10 @@ func TestPositionalPredictor_predictor_variadic(t *testing.T) {
 		}
 	})
 
-	t.Run("single predictor variadic", func(t *testing.T) {
+	t.Run("single predictor (cumulative)", func(t *testing.T) {
 		posPredictor := &PositionalPredictor{
-			Predictors:     []complete.Predictor{predictor1},
-			LastIsVariadic: true,
+			Predictors:           []complete.Predictor{predictor1},
+			LastFlagIsCumulative: true,
 		}
 		for args, want := range map[string]complete.Predictor{
 			``:            predictor1,
@@ -100,10 +100,10 @@ func TestPositionalPredictor_predictor_variadic(t *testing.T) {
 		}
 	})
 
-	t.Run("not variadic still returns nil", func(t *testing.T) {
+	t.Run("non-cumulative returns nil (i.e., does not predict anything)", func(t *testing.T) {
 		posPredictor := &PositionalPredictor{
-			Predictors:     []complete.Predictor{predictor1, predictor2},
-			LastIsVariadic: false,
+			Predictors:           []complete.Predictor{predictor1, predictor2},
+			LastFlagIsCumulative: false,
 		}
 		got := posPredictor.predictor(newArgs("app foo bar "))
 		assert.Nil(t, got)

@@ -8,10 +8,10 @@ import (
 
 // PositionalPredictor is a predictor for positional arguments
 type PositionalPredictor struct {
-	Predictors     []complete.Predictor
-	ArgFlags       []string
-	BoolFlags      []string
-	LastIsVariadic bool
+	Predictors           []complete.Predictor
+	ArgFlags             []string
+	BoolFlags            []string
+	LastFlagIsCumulative bool // “Cumulative” means the last flag can appear multiple times.
 }
 
 // Predict implements complete.Predict
@@ -27,7 +27,7 @@ func (p *PositionalPredictor) predictor(a complete.Args) complete.Predictor {
 	position := p.predictorIndex(a)
 	complete.Log("predicting positional argument(%d)", position)
 	if position < 0 || position > len(p.Predictors)-1 {
-		if p.LastIsVariadic && len(p.Predictors) > 0 {
+		if p.LastFlagIsCumulative && len(p.Predictors) > 0 {
 			return p.Predictors[len(p.Predictors)-1]
 		}
 		return nil

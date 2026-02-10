@@ -161,12 +161,12 @@ func nodeCommand(node *kong.Node, opts *options, vars kong.Vars, flags flags) (*
 	if err != nil {
 		return nil, err
 	}
-	lastIsVariadic := len(node.Positional) > 0 && node.Positional[len(node.Positional)-1].IsCumulative()
+	lastIsCumulative := len(node.Positional) > 0 && node.Positional[len(node.Positional)-1].IsCumulative()
 	cmd.Args = &PositionalPredictor{
-		Predictors:     pps,
-		ArgFlags:       flagNamesWithHyphens(flags.argFlags...),
-		BoolFlags:      flagNamesWithHyphens(flags.boolFlags...),
-		LastIsVariadic: lastIsVariadic,
+		Predictors:           pps,
+		ArgFlags:             flagNamesWithHyphens(flags.argFlags...),
+		BoolFlags:            flagNamesWithHyphens(flags.boolFlags...),
+		LastFlagIsCumulative: lastIsCumulative,
 	}
 
 	return &cmd, nil
