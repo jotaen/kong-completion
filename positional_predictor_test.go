@@ -55,6 +55,61 @@ func TestPositionalPredictor_predictor(t *testing.T) {
 	}
 }
 
+func TestPositionalPredictor_predictor_cumulative(t *testing.T) {
+	predictor1 := complete.PredictSet("1")
+	predictor2 := complete.PredictSet("2")
+
+	t.Run("two predictors, last flag is cumulative", func(t *testing.T) {
+		posPredictor := &PositionalPredictor{
+			Predictors:           []complete.Predictor{predictor1, predictor2},
+			LastFlagIsCumulative: true,
+		}
+		for args, want := range map[string]complete.Predictor{
+			``:              predictor1,
+			`foo`:           predictor1,
+			`foo `:          predictor2,
+			`foo bar`:       predictor2,
+			`foo bar `:      predictor2,
+			`foo bar baz`:   predictor2,
+			`foo bar baz  `: predictor2,
+		} {
+			t.Run(args, func(t *testing.T) {
+				got := posPredictor.predictor(newArgs("app " + args))
+				assert.Equal(t, want, got)
+			})
+		}
+	})
+
+	t.Run("single predictor (cumulative)", func(t *testing.T) {
+		posPredictor := &PositionalPredictor{
+			Predictors:           []complete.Predictor{predictor1},
+			LastFlagIsCumulative: true,
+		}
+		for args, want := range map[string]complete.Predictor{
+			``:            predictor1,
+			`foo`:         predictor1,
+			`foo `:        predictor1,
+			`foo bar`:     predictor1,
+			`foo bar `:    predictor1,
+			`foo bar baz`: predictor1,
+		} {
+			t.Run(args, func(t *testing.T) {
+				got := posPredictor.predictor(newArgs("app " + args))
+				assert.Equal(t, want, got)
+			})
+		}
+	})
+
+	t.Run("non-cumulative returns nil (i.e., does not predict anything)", func(t *testing.T) {
+		posPredictor := &PositionalPredictor{
+			Predictors:           []complete.Predictor{predictor1, predictor2},
+			LastFlagIsCumulative: false,
+		}
+		got := posPredictor.predictor(newArgs("app foo bar "))
+		assert.Nil(t, got)
+	})
+}
+
 // The code below is taken from https://github.com/posener/complete/blob/f6dd29e97e24f8cb51a8d4050781ce2b238776a4/args.go
 // to assist in tests.
 

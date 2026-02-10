@@ -215,6 +215,79 @@ func Test_tagPredictor(t *testing.T) {
 	})
 }
 
+func TestCompleteCumulativeFlags(t *testing.T) {
+	t.Run("single cumulative arg", func(t *testing.T) {
+		predictors := map[string]complete.Predictor{
+			"sources": complete.PredictSet("src1", "src2", "src3"),
+		}
+
+		var cli struct {
+			Sources []string `kong:"arg,completion-predictor=sources"`
+		}
+
+		for _, td := range []completeTest{
+			{line: "myApp ", want: []string{"src1", "src2", "src3"}},
+			{line: "myApp src", want: []string{"src1", "src2", "src3"}},
+			{line: "myApp src1 ", want: []string{"src1", "src2", "src3"}},
+			{line: "myApp src1 src2 ", want: []string{"src1", "src2", "src3"}},
+			{line: "myApp src1 src2 src3 ", want: []string{"src1", "src2", "src3"}},
+		} {
+			t.Run(td.line, func(t *testing.T) {
+				got := runComplete(t, kong.Must(&cli), td.line, []Option{WithPredictors(predictors)})
+				assert.ElementsMatch(t, td.want, got)
+			})
+		}
+	})
+
+	t.Run("cumulative and non-cumulative args mixed", func(t *testing.T) {
+		predictors := map[string]complete.Predictor{
+			"dests":   complete.PredictSet("dest1", "dest2"),
+			"sources": complete.PredictSet("src1", "src2", "src3"),
+		}
+
+		var cli struct {
+			Dest    string   `kong:"arg,completion-predictor=dests"`
+			Sources []string `kong:"arg,completion-predictor=sources"`
+		}
+
+		for _, td := range []completeTest{
+			{line: "myApp ", want: []string{"dest1", "dest2"}},
+			{line: "myApp dest1 ", want: []string{"src1", "src2", "src3"}},
+			{line: "myApp dest1 src1 ", want: []string{"src1", "src2", "src3"}},
+			{line: "myApp dest1 src1 src2 ", want: []string{"src1", "src2", "src3"}},
+		} {
+			t.Run(td.line, func(t *testing.T) {
+				got := runComplete(t, kong.Must(&cli), td.line, []Option{WithPredictors(predictors)})
+				assert.ElementsMatch(t, td.want, got)
+			})
+		}
+	})
+
+	t.Run("cumulative and non-cumulative flag mixed", func(t *testing.T) {
+		predictors := map[string]complete.Predictor{
+			"sources": complete.PredictSet("src1", "src2", "src3"),
+		}
+
+		var cli struct {
+			Verbose bool     `kong:""`
+			Sources []string `kong:"arg,completion-predictor=sources"`
+		}
+
+		for _, td := range []completeTest{
+			{line: "myApp ", want: []string{"src1", "src2", "src3"}},
+			{line: "myApp --verbose ", want: []string{"src1", "src2", "src3"}},
+			{line: "myApp src1 ", want: []string{"src1", "src2", "src3"}},
+			{line: "myApp --verbose src1 ", want: []string{"src1", "src2", "src3"}},
+			{line: "myApp src1 --verbose src2 ", want: []string{"src1", "src2", "src3"}},
+		} {
+			t.Run(td.line, func(t *testing.T) {
+				got := runComplete(t, kong.Must(&cli), td.line, []Option{WithPredictors(predictors)})
+				assert.ElementsMatch(t, td.want, got)
+			})
+		}
+	})
+}
+
 type testTag map[string]string
 
 func (t testTag) Has(k string) bool {
