@@ -42,7 +42,8 @@ var bash = shell{
 
 var zsh = shell{
 	name: "zsh",
-	initCode: tmpl(`autoload -U +X bashcompinit && bashcompinit
+	initCode: tmpl(`#compdef {{.BinName}}
+autoload -U +X bashcompinit && bashcompinit
 complete{{if .UseShellDefault}} -o default -o bashdefault{{ end }} -C {{.BinPath}} {{.BinName}}`),
 	configFileCode: tmpl(`source <({{.BinName}} {{.SubCmdName}} -c zsh)`),
 	initFilePath:   "~/.zshrc",
