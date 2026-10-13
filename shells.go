@@ -33,9 +33,10 @@ func newShellFromString(shellName string) (shell, error) {
 	return sh, nil
 }
 
+// bash and zsh parse the -C command again when they complete, so BinPath is quoted twice.
 var bash = shell{
 	name:           "bash",
-	initCode:       tmpl(`complete{{if .UseShellDefault}} -o default -o bashdefault{{ end }} -C {{.BinPath}} {{.BinName}}`),
+	initCode:       tmpl(`complete{{if .UseShellDefault}} -o default -o bashdefault{{ end }} -C {{shquote (shquote .BinPath)}} {{.BinName}}`),
 	configFileCode: tmpl(`source <({{.BinName}} {{.SubCmdName}} -c bash)`),
 	initFilePath:   "~/.bashrc",
 }
@@ -44,7 +45,7 @@ var zsh = shell{
 	name: "zsh",
 	initCode: tmpl(`#compdef {{.BinName}}
 autoload -U +X bashcompinit && bashcompinit
-complete{{if .UseShellDefault}} -o default -o bashdefault{{ end }} -C {{.BinPath}} {{.BinName}}`),
+complete{{if .UseShellDefault}} -o default -o bashdefault{{ end }} -C {{shquote (shquote .BinPath)}} {{.BinName}}`),
 	configFileCode: tmpl(`source <({{.BinName}} {{.SubCmdName}} -c zsh)`),
 	initFilePath:   "~/.zshrc",
 }
@@ -55,7 +56,7 @@ var fish = shell{
     set -lx COMP_LINE (commandline -cp)
     test -z (commandline -ct)
     and set COMP_LINE "$COMP_LINE "
-    {{.BinPath}}
+    {{fishquote .BinPath}}
 end
 complete -f -c {{.BinName}} -a "(__complete_{{.BinName}})"`),
 	configFileCode: tmpl(`{{.BinName}} {{.SubCmdName}} -c fish | source`),
