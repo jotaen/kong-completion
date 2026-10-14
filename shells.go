@@ -2,6 +2,8 @@ package kongcompletion
 
 import (
 	"errors"
+	"strings"
+	gotemplate "text/template"
 )
 
 type shell struct {
@@ -34,18 +36,22 @@ func newShellFromString(shellName string) (shell, error) {
 }
 
 var bash = shell{
-	name:           "bash",
-	initCode:       tmpl(`complete{{if .UseShellDefault}} -o default -o bashdefault{{ end }} -C {{.BinPath}} {{.BinName}}`),
-	configFileCode: tmpl(`source <({{.BinName}} {{.SubCmdName}} -c bash)`),
+	name: "bash",
+	// bash parses the -C command again when it completes, so BinPath needs to be quoted twice.
+	initCode: tmpl(`complete{{if .UseShellDefault}} -o default -o bashdefault{{ end }} -C {{quote (quote .BinPath)}} {{.BinName}}`,
+		gotemplate.FuncMap{"quote": shquote}),
+	configFileCode: tmpl(`source <({{.BinName}} {{.SubCmdName}} -c bash)`, nil),
 	initFilePath:   "~/.bashrc",
 }
 
 var zsh = shell{
 	name: "zsh",
+	// zsh parses the -C command again when it completes, so BinPath needs to be quoted twice.
 	initCode: tmpl(`#compdef {{.BinName}}
 autoload -U +X bashcompinit && bashcompinit
-complete{{if .UseShellDefault}} -o default -o bashdefault{{ end }} -C {{.BinPath}} {{.BinName}}`),
-	configFileCode: tmpl(`source <({{.BinName}} {{.SubCmdName}} -c zsh)`),
+complete{{if .UseShellDefault}} -o default -o bashdefault{{ end }} -C {{quote (quote .BinPath)}} {{.BinName}}`,
+		gotemplate.FuncMap{"quote": shquote}),
+	configFileCode: tmpl(`source <({{.BinName}} {{.SubCmdName}} -c zsh)`, nil),
 	initFilePath:   "~/.zshrc",
 }
 
@@ -55,9 +61,27 @@ var fish = shell{
     set -lx COMP_LINE (commandline -cp)
     test -z (commandline -ct)
     and set COMP_LINE "$COMP_LINE "
-    {{.BinPath}}
+    {{quote .BinPath}}
 end
-complete -f -c {{.BinName}} -a "(__complete_{{.BinName}})"`),
-	configFileCode: tmpl(`{{.BinName}} {{.SubCmdName}} -c fish | source`),
+complete -f -c {{.BinName}} -a "(__complete_{{.BinName}})"`,
+		gotemplate.FuncMap{
+			"quote": func(s string) string {
+				if s != "" && strings.Trim(s, safeChars) == "" {
+					return s
+				}
+				return "'" + strings.NewReplacer(`\`, `\\`, "'", `\'`).Replace(s) + "'"
+			},
+		}),
+	configFileCode: tmpl(`{{.BinName}} {{.SubCmdName}} -c fish | source`, nil),
 	initFilePath:   "~/.config/fish/config.fish",
+}
+
+// safeChars never need quoting in a shell word.
+const safeChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@%+=:,./_-"
+
+func shquote(s string) string {
+	if s != "" && strings.Trim(s, safeChars) == "" {
+		return s
+	}
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }

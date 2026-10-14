@@ -15,8 +15,11 @@ type templateData struct {
 type template gotemplate.Template
 
 // tmpl compiles a template from the given input string. It panics if the text is malformed.
-func tmpl(tmpl string) *template {
-	t, err := gotemplate.New("").Parse(tmpl)
+func tmpl(tmpl string, customFuncs gotemplate.FuncMap) *template {
+	if customFuncs == nil {
+		customFuncs = gotemplate.FuncMap{}
+	}
+	t, err := gotemplate.New("").Funcs(customFuncs).Parse(tmpl)
 	if err != nil {
 		panic(err)
 	}
